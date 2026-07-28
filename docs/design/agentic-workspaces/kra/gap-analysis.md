@@ -55,7 +55,7 @@ cannot expand silently). Contributions have to respect that structure; the specs
 | 11 | Trash before delete | **Missing** | `docs/dev/spec/commands/ws/purge.md` deletes directly |
 | 12 | Doctor / repair | **Met** | `internal/cli/doctor.go`, `docs/dev/spec/commands/doctor.md` |
 | 13 | Path / branch templates | **Partial** | branch templates only |
-| 14 | Custom subcommands | **Missing** | fixed dispatch in `internal/cli/cli.go` |
+| 14 | Custom subcommands | **Missing** | fixed dispatch in `internal/cli/cli.go`; registry pattern exists in `internal/repodiscovery` |
 | 15 | Shell navigation protocol | **Met** | `docs/dev/spec/commands/shell/init.md` |
 | 16 | Bounded parallel operations | **Partial** | bounded pool exists (`internal/app/cmux/usecase.go:145`), not shared |
 
@@ -95,11 +95,23 @@ Consequence for agent use: every agent that lands in a fresh workspace must redi
 project setup itself, and `kra` cannot distinguish "workspace created" from "workspace usable".
 There is no `bootstrap-failed` state to report because there is no bootstrap.
 
+This finding is corroborated independently: an AI index over the whole codebase, asked the same
+question, returns "no lifecycle hooks, no post-create bootstrap, no background process supervision,
+no trust model," and can enumerate only three places `kra` runs anything external — the `ws open
+--command` passthrough to the terminal, the Dock's own `kra ws status --current` invocation, and Git
+itself.
+
 This is the single change that most increases `kra`'s value as an agentic substrate, and it is a
-clean fit for the existing architecture — `internal/procexec/` already centralizes external command
-execution (`docs/dev/spec/concepts/external-command-execution.md`), and the lifecycle journal
-(`docs/dev/spec/concepts/lifecycle-journal.md`) already demonstrates how to persist multi-phase
-progress recoverably.
+clean fit for the existing architecture:
+
+- `internal/procexec/` already wraps `exec.CommandContext` with default-timeout and
+  deadline-cancellation semantics (`RunCombined`, `RunOutput`), so hooks get bounded execution and
+  cancellation without new machinery, under the existing
+  `docs/dev/spec/concepts/external-command-execution.md`.
+- The lifecycle journal (`docs/dev/spec/concepts/lifecycle-journal.md`) already demonstrates how to
+  persist multi-phase progress recoverably.
+- `internal/repodiscovery` already demonstrates the registry/factory pattern a hook-provider or
+  runtime registry would follow (see [§14](#14-custom-subcommands--missing-but-the-pattern-exists)).
 
 ## 2. Ergonomic CLI — Mostly met
 
@@ -226,6 +238,10 @@ concepts behind capability queries rather than assuming them, and generalizing t
 schema and filenames. `ws open` already degrades to directory-open when cmux is unavailable, which
 is effectively a third (no-op) adapter and a useful shape to generalize from.
 
+There is a shape to copy: `internal/repodiscovery`'s provider registry
+([§14](#14-custom-subcommands--missing-but-the-pattern-exists)) is the same problem solved once
+already — an interface, a factory registry, a name-resolved constructor, a built-in default.
+
 Doing this generically is also what makes it upstreamable rather than fork-only — see
 [fork strategy](../decisions/fork-strategy.md).
 
@@ -290,7 +306,7 @@ Workspace and worktree *paths* are not templated: `workspaces/<id>/repos/<alias>
 filesystem-first root detection and deterministic agent paths work — so this is a gap only if
 integrating with an existing directory convention. Low priority; note the trade-off before changing it.
 
-## 14. Custom subcommands — Missing
+## 14. Custom subcommands — Missing (but the pattern exists)
 
 Dispatch is a fixed `switch` in `internal/cli/cli.go`. There is no `kra <custom>` extension point,
 no `kra-*` PATH-lookup convention, and no config-defined command aliases. The baseline lists this
@@ -298,6 +314,18 @@ under "strongly desired" as the escape valve that keeps workstation-specific beh
 tool — which is the same argument [fork strategy](../decisions/fork-strategy.md) makes for keeping
 OpenSpec/AXIS-specific behavior in a higher layer. Without an extension point, that behavior has
 nowhere to go but into the fork.
+
+`kra` does, however, already have a registry-based extension pattern — just scoped to one feature.
+`internal/repodiscovery/provider.go` defines a `Provider` interface (`Name`, `CheckAuth`,
+`ListOrgRepos`), a `ProviderFactory`, a mutex-guarded registry seeded with `github`, and
+`RegisterProvider(name, factory)` / `SupportedProviders()` / `NewProvider(name)` with duplicate
+rejection and a supported-list error message. `kra repo discover --provider <name>` resolves through
+it.
+
+That matters more than the feature it serves: it is a precedent. A runtime-adapter registry
+([§8](#8-runtime-adapter-abstraction--partial)) or a hook-provider registry would follow an
+established convention in this codebase rather than introduce a new one — which is exactly the
+argument that makes them upstreamable.
 
 ## 15. Shell navigation protocol — Met
 

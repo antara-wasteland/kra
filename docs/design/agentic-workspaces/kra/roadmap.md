@@ -44,8 +44,9 @@ Contract:
 - hooks are repository-owned or root-owned scripts, not `kra` config that inlines shell,
 - environment carries `KRA_TASK_ID`, `KRA_WORKSPACE_PATH`, `KRA_REPO_KEY`, `KRA_REPO_ALIAS`,
   `KRA_WORKTREE_PATH`, `KRA_BRANCH`, `KRA_BASE_REF`, `KRA_HOOK_EVENT`, `KRA_INDEX`,
-- run through `internal/procexec/` so `docs/dev/spec/concepts/external-command-execution.md` keeps
-  covering every external process,
+- run through `internal/procexec/`, which already provides default-timeout and deadline-cancellation
+  semantics around `exec.CommandContext` — so a runaway hook is bounded by construction, under the
+  existing `docs/dev/spec/concepts/external-command-execution.md`,
 - blocking by default; failure produces a recorded `bootstrap-failed` state, not a silent partial
   workspace,
 - idempotent by contract — reruns must be safe, and there must be a way to rerun
@@ -120,6 +121,10 @@ existing directory-open fallback as the no-op adapter. Touches ~27 files, the ma
 and the state filenames — mechanical but broad, and best raised upstream as one intentional change
 rather than accumulated in a fork.
 
+Follow the shape already in `internal/repodiscovery/provider.go`: interface + `ProviderFactory` +
+name-keyed registry with a built-in default and a supported-list error. Reusing an existing
+in-repo convention is a materially easier upstream argument than proposing a new one.
+
 ### 4.2 Herdr adapter (fork-local until upstream accepts 4.1)
 
 Implement against the port from 4.1. Not before it — a second runtime wired in by name is exactly
@@ -130,6 +135,10 @@ the "scattered special cases" outcome the design notes warn about.
 `kra <name>` resolving to `kra-<name>` on PATH, or root-config-declared commands. This is what lets
 OpenSpec/AXIS-specific and workstation-specific behavior live outside the tool instead of inside
 the fork.
+
+Note that `kra` is not hostile to extension — `internal/repodiscovery` already exposes
+`RegisterProvider`. What is missing is an extension point at the *command* level, and the argument
+for one is that it keeps single-user behavior out of upstream.
 
 ## Explicitly out of scope
 

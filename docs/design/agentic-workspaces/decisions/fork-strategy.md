@@ -87,10 +87,11 @@ than letting it accumulate as fork drift.
 
 These belong in a higher integration layer or in configuration. Note that `kra` currently has no
 custom-subcommand extension point
-([gap analysis §14](../kra/gap-analysis.md#14-custom-subcommands--missing)), so this rule has nowhere
-to land until [roadmap 4.3](../kra/roadmap.md#43-custom-subcommand-extension-point-upstreamable)
-exists. Until then, resist putting workstation specifics into the fork — that is exactly how a fork
-becomes unmergeable.
+([gap analysis §14](../kra/gap-analysis.md#14-custom-subcommands--missing-but-the-pattern-exists)),
+so this rule has nowhere to land until
+[roadmap 4.3](../kra/roadmap.md#43-custom-subcommand-extension-point-upstreamable) exists. Until
+then, resist putting workstation specifics into the fork — that is exactly how a fork becomes
+unmergeable.
 
 ## Contributing upstream: what the project expects
 
