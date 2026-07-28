@@ -38,3 +38,11 @@ status: implemented
 
 - `docs/concepts/README.md`
 - `docs/concepts/product-concept.md`
+
+## Design notes
+
+Architecture notes and forward-looking analysis (not implementation contracts):
+
+- `docs/design/agentic-workspaces/README.md` — agentic workspaces & Git worktrees
+- `docs/design/agentic-workspaces/kra/gap-analysis.md` — source-level audit against the requirement baseline
+- `docs/design/agentic-workspaces/kra/roadmap.md` — sequenced gaps
