@@ -16,6 +16,28 @@ spec, or the absence of both.
 
 Audited at commit `1fdcd0b` (`fix(repo): honor gh clone protocol in discover`).
 
+**This is an audit of upstream.** At the time of writing, `rishwanth-th/kra` `main` is identical to
+`tasuku43/kra` `main` at `1fdcd0b` — no commits in either direction. Every finding below therefore
+describes upstream `kra`, not fork-local behavior, and every gap is an upstream contribution
+opportunity rather than a divergence to maintain. See
+[fork strategy](../decisions/fork-strategy.md).
+
+Two facts from upstream's own process documents frame the results:
+
+- **The backlog is complete.** `docs/dev/backlog/` tracks 17 epic files, and every ticket in every
+  file is checked. There is no stated pending direction to collide with.
+- **Nothing hook-shaped was ever proposed.** Searching the whole backlog for hooks or bootstrap
+  returns only shell-integration bootstrap (`UX-CORE-002`), config scaffolding (`CONFIG-003`,
+  `CONFIG-006`), and template scaffolding (`TEMPLATE-WS-002`). Lifecycle hooks were not considered
+  and rejected — they were never raised. That is the difference between a philosophical objection
+  and an unfilled gap, and it is what makes the roadmap upstreamable.
+
+`kra` is also strictly layered — `cli` → `app` → `domain`, with `infra`/`ui` adapters — and the
+layering is enforced by tests rather than convention (`internal/archguard/layering_test.go` asserts
+dependency direction and holds an explicit allowlist for direct infra imports under `cli`, so it
+cannot expand silently). Contributions have to respect that structure; the specs under
+`docs/dev/spec/` are written before implementation, per `AGENTS.md`.
+
 ## Scorecard
 
 | # | Requirement | Status | Where |
@@ -35,7 +57,7 @@ Audited at commit `1fdcd0b` (`fix(repo): honor gh clone protocol in discover`).
 | 13 | Path / branch templates | **Partial** | branch templates only |
 | 14 | Custom subcommands | **Missing** | fixed dispatch in `internal/cli/cli.go` |
 | 15 | Shell navigation protocol | **Met** | `docs/dev/spec/commands/shell/init.md` |
-| 16 | Bounded parallel operations | **Partial** | parallel but unbounded |
+| 16 | Bounded parallel operations | **Partial** | bounded pool exists (`internal/app/cmux/usecase.go:145`), not shared |
 
 Headline: `kra` is strong exactly where the baseline calls for *state discipline* — task identity,
 canonical metadata, risk classification, recoverable close, shared bare pool, machine output — and
@@ -184,8 +206,12 @@ processes are run. A hook trust store belongs next to those, not bolted onto the
 
 ## 8. Runtime adapter abstraction — Partial
 
-There is an interface — `cmux.Client` (`internal/app/cmux/usecase.go:17`) — and the state-store spec
-already treats runtime mapping as non-canonical, degradable data. Both are the right instincts.
+The boundary is deliberate, not accidental. There is an interface — `cmux.Client`
+(`internal/app/cmux/usecase.go:17`); the state-store spec treats runtime mapping as non-canonical,
+degradable data; and the architecture spec states the containment rule outright: "`cmux` is exposed
+only via workspace entrypoints (`kra ws open`); no dedicated top-level command group exists"
+(`docs/dev/spec/concepts/architecture.md`). Upstream has already decided the runtime must not become
+a peer of the workspace model.
 
 But the abstraction is named for its only implementation. `cmux` appears in 27 non-test source files,
 including `internal/cli/init.go`, `template_common.go`, `root_migrate.go`, `doctor.go`,
@@ -280,21 +306,29 @@ nowhere to go but into the fork.
 zsh/bash/sh/fish (`docs/dev/spec/commands/shell/init.md`). This is what keeps `ws close` from
 stranding you in a deleted directory, and what makes directory-fallback `ws open` actually navigate.
 
-## 16. Bounded parallelism — Partial
+## 16. Bounded parallelism — Partial (not generalized)
 
-Real concurrency exists where it matters most: `ws add-repo` prefetches selected repositories
-concurrently with a progress stream and per-repo success/failure aggregation
-(`internal/cli/ws_add_repo.go:530-570`), and `repo pool add` and `ws import all` also fan out.
+A correct bounded worker pool already exists. `cmux.Service.openConcurrent`
+(`internal/app/cmux/usecase.go:145`) runs a fixed worker count over a job channel, aggregates results
+into their original order, and reports partial failures per target. It is exposed as
+`kra ws open --multi-select --concurrency <n>`, defaults to `min(targets, max(2, GOMAXPROCS))` when
+unspecified, and is pinned to `1` for `--all` (`docs/dev/spec/commands/ws/open.md`). It shipped as a
+deliberate backlog item — `CMUX-010: bounded parallel execution with result aggregation and
+partial-failure reporting`.
 
-Gap: no bound. Each fan-out spawns one goroutine per item with a `sync.WaitGroup`; there is no
-semaphore, no configurable concurrency limit, and no shared policy. Adding twenty repositories
-launches twenty simultaneous `git fetch`es. The baseline is explicit that the point is *bounded*
-concurrency with cancellation and idempotent retry, "not merely 'use goroutines everywhere because
-apparently computers enjoy chaos.'" Context cancellation does thread through; the bound and the
-retry policy do not.
+So the baseline's requirement — bounded concurrency, cancellation, clear errors, "not merely 'use
+goroutines everywhere because apparently computers enjoy chaos'" — is already understood and
+implemented here.
 
-This matters more once hooks exist, since bootstrap is heavier than fetch — a bounded worker pool
-should be a shared internal primitive before, not after, hooks land.
+Gap: it is not a shared primitive. The other fan-outs do not use it. `ws add-repo` prefetches
+repositories with one goroutine per item and a bare `sync.WaitGroup`
+(`internal/cli/ws_add_repo.go:530-570`), as do `repo pool add` and `ws import all` — no semaphore, no
+`--concurrency` flag, no shared policy. Adding twenty repositories launches twenty simultaneous
+`git fetch`es. Context cancellation threads through; the bound and retry policy do not.
+
+This reframes the fix: extract the proven pool from `internal/app/cmux/` into a layer-appropriate
+shared package and retrofit the other call sites — not design a new one. Worth doing before hooks
+land, since bootstrap is heavier than fetch.
 
 ---
 

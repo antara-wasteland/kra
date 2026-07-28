@@ -5,7 +5,8 @@ status: draft
 
 # kra in this Architecture
 
-Upstream: `tasuku43/kra`. This repository is a fork — see [fork strategy](../decisions/fork-strategy.md).
+Upstream: `tasuku43/kra`. This repository is a fork currently identical to upstream — see
+[fork strategy](../decisions/fork-strategy.md).
 
 ## Why kra was chosen as the substrate
 
@@ -50,6 +51,13 @@ layer, and only that:
 
 It does not own merge semantics, PR policy, task decomposition, or agent execution policy — and it
 should not acquire them.
+
+Internally the same discipline is structural rather than aspirational: `cli` → `app` → `domain` with
+adapters in `infra`/`ui`, dependency direction asserted by tests in
+`internal/archguard/layering_test.go`, and the terminal runtime confined by spec to workspace
+entrypoints ("`cmux` is exposed only via workspace entrypoints (`kra ws open`); no dedicated
+top-level command group exists" — `docs/dev/spec/concepts/architecture.md`). A substrate that
+enforces its own boundaries in CI is a substrate worth building on.
 
 ## What the audit found
 

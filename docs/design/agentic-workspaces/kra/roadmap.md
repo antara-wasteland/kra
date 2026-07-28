@@ -13,11 +13,16 @@ Each item notes whether it is **upstreamable** (generic enough to raise against 
 
 ## Phase 1 — make the substrate extensible
 
-### 1.1 Bounded worker pool (upstreamable)
+### 1.1 Generalize the existing bounded worker pool (upstreamable)
 
-A shared internal primitive for fan-out: configurable concurrency limit, context cancellation,
-per-item error aggregation, streamed progress. Retrofit `ws add-repo`, `repo pool add`, and
-`ws import all` onto it.
+Not a new design — `cmux.Service.openConcurrent` (`internal/app/cmux/usecase.go:145`) is already a
+correct bounded pool with ordered result aggregation and partial-failure reporting, shipped as
+backlog item `CMUX-010`. Extract it into a layer-appropriate shared package and retrofit
+`ws add-repo`, `repo pool add`, and `ws import all`, which currently spawn one goroutine per item
+with a bare `sync.WaitGroup`.
+
+Carry the `--concurrency <n>` convention and the `min(targets, max(2, GOMAXPROCS))` default from
+`ws open` so the flag means the same thing everywhere.
 
 Deliberately first. Hooks are heavier than fetches, and adding an unbounded hook runner then
 bounding it later means writing the same code twice.
@@ -132,5 +137,6 @@ Unchanged from the [requirement baseline](../03-requirements.md): no LLM-generat
 no model API keys, no task decomposition, no autonomous merging, no PR or CI policy, no
 specification ownership. Those belong above the workspace substrate.
 
-`kra serve`, `ws insight`, and the GitHub import paths already present in this fork sit at the edge
-of that line. They are fine as long as the substrate below them stays usable without them.
+`kra serve`, `ws insight`, and the GitHub import paths — all upstream features, not fork additions —
+sit at the edge of that line. They are fine as long as the substrate below them stays usable without
+them.
