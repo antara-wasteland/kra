@@ -22,22 +22,23 @@ A task may involve:
 The desired architecture therefore separates repository inventory, task/workspace management,
 Git worktree lifecycle, terminal/process orchestration, and higher-level agent/specification workflows.
 
-## Scope of this copy
+## Scope
 
-These notes originated as a single cross-tool wiki that was kept alongside more than one
-worktree/workspace manager. That does not survive contact with real repositories: the same file
-drifts in two places, and tool-specific evaluation ends up living in a repo that cannot act on it.
+These notes began as a cross-tool survey of worktree/workspace managers. That phase is over: `kra` is
+the chosen substrate, and development happens in this fork.
 
-This copy is split along one rule:
+So the scope here is `kra` and nothing else:
 
-| Content | Lives where |
-|---|---|
-| Shared substrate — problem framing, core insights, requirement baseline, architecture, lifecycle, storage | Duplicated by design in each substrate repo. Treat as a common charter; change it deliberately. |
-| `kra`-specific — positioning, source-level gap analysis, roadmap, fork stance | **This repo only** (`kra/`, `decisions/`). |
-| Sibling-tool specifics — Gion evaluation, Worktrunk/GTR feature studies, Herdr integration design | The relevant tool's own repo. Here they are reduced to one positioning page ([`neighbors.md`](neighbors.md)). |
+- **In scope** — why the task-first model is right, what the substrate must do, where `kra` currently
+  stands against that, and what to build next.
+- **Out of scope** — evaluation of other worktree or workspace managers. The comparison did its job
+  and has been removed; it is recoverable from Git history if ever needed.
 
-When adding a page, ask which row it belongs to first. If it is an evaluation of a tool other
-than `kra`, it does not belong here.
+The one exception is the terminal runtime, which is genuinely part of `kra`'s design surface: `kra`
+integrates with cmux today, and the goal is a runtime-neutral port so a different runtime can be an
+adapter rather than a rewrite. That is a `kra` feature, not a tool comparison.
+
+When adding a page, ask whether it changes what `kra` should do. If not, it does not belong here.
 
 ## Current direction
 
@@ -51,43 +52,39 @@ OpenSpec / AXIS / plans / agent harness
        ┌────────────┴────────────┐
        ▼                         ▼
 Git worktree lifecycle      Terminal runtime
-+ repo bootstrap            (cmux today, Herdr wanted)
++ repo bootstrap            (cmux today, adapter wanted)
        │                         │
        └────────────┬────────────┘
                     ▼
                    Git
 ```
 
-Long-lived repository inventory/bootstrap remains a separate concern, currently handled with Mani.
+Durable machine-wide repository inventory stays outside this picture — `kra`'s repo pool is a
+per-remote object cache, not an inventory of what you own.
 
 ## Map
 
-Shared substrate:
+Why, and what the substrate must do:
 
 - [Problem framing](01-problem-framing.md)
 - [Core insights](02-core-insights.md)
-- [Requirements](03-requirements.md)
+- [Requirements](03-requirements.md) — the baseline the audit scores against
 - [Architecture overview](architecture/overview.md)
 - [Lifecycle design](architecture/lifecycle.md)
 - [Monorepo and polyrepo](architecture/monorepo-polyrepo.md)
 - [Storage and performance](architecture/storage-performance.md)
-- [Exploration log](exploration-log.md)
 
-`kra` in this architecture:
+Where `kra` stands, and what to build:
 
 - [Positioning](kra/positioning.md)
 - [Gap analysis (source-level audit)](kra/gap-analysis.md)
 - [Roadmap](kra/roadmap.md)
-- [Proposed task workspace workflow](workflows/task-workspace.md)
+- [Task workspace workflow](workflows/task-workspace.md) — target flow vs today, step by step
 
 Decisions:
 
 - [Fork / upstream strategy](decisions/fork-strategy.md)
 - [Open questions](decisions/open-questions.md)
-
-Context:
-
-- [Neighboring tools](neighbors.md)
 
 ## Design principle
 

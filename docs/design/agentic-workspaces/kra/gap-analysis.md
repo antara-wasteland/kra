@@ -8,11 +8,9 @@ status: draft
 Source-level audit of this repository against the tool-neutral
 [requirement baseline](../03-requirements.md).
 
-The [exploration log](../exploration-log.md) ends by naming the next step: compare candidate
-substrates *at source level* around hook extensibility, parallel execution, task state model,
-archive/reopen, cleanup, machine-readable APIs, and runtime integration boundaries. This page is the
-`kra` half of that comparison. It is deliberately evidence-first: every claim points at a file, a
-spec, or the absence of both.
+Scored at source level across hook extensibility, parallel execution, task state model,
+archive/reopen, cleanup, machine-readable APIs, and runtime integration boundaries. Deliberately
+evidence-first: every claim points at a file, a spec, or the absence of both.
 
 Audited at commit `1fdcd0b` (`fix(repo): honor gh clone protocol in discover`).
 
@@ -68,8 +66,8 @@ absent exactly where the baseline calls for *extensibility*. There is no way for
 
 ## 1. Post-create bootstrap — Missing
 
-The baseline calls this mandatory, and the [exploration log](../exploration-log.md) calls it the
-non-negotiable feature: a newly created worktree must be able to run `uv sync`,
+The [baseline](../03-requirements.md) calls this mandatory, and it is the one requirement recorded as
+non-negotiable: a newly created worktree must be able to run `uv sync`,
 `pnpm install --frozen-lockfile`, `git submodule update --init --recursive`, `direnv allow`, or
 `./scripts/worktree-bootstrap` with `TASK_ID` / `WORKSPACE_PATH` / `REPO_NAME` / `WORKTREE_PATH` /
 `BRANCH` / `INDEX` in the environment.
@@ -134,7 +132,11 @@ classes, so an agent can be told how to drive `kra` without scraping help text.
 `internal/core/workspacerisk/workspacerisk.go` classifies each repo as `clean`, `dirty`, `unpushed`,
 `diverged`, or `unknown`, with `unknown` covering detached HEAD, missing HEAD, absent upstream, and
 status errors — then aggregates repo states into a workspace-level risk with a deliberate precedence
-order. `ws close` and `ws purge` both compute this live and prompt before continuing
+order. (The vocabulary is borrowed rather than invented: `docs/dev/spec/commands/ws/close.md` says to
+"compute risk similar to `gion`", and `ws/list.md` describes `ws list` as similar in spirit to
+`gion manifest ls`. Recorded because it is `kra`'s own provenance, not a comparison.)
+
+`ws close` and `ws purge` both compute this live and prompt before continuing
 (`docs/dev/spec/commands/ws/close.md`, `.../purge.md`); `ws purge` requires an extra confirmation and
 refuses to run non-interactively without an explicit force flag.
 

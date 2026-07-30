@@ -5,7 +5,9 @@ status: draft
 
 # Lifecycle Design
 
-Worktrunk's lifecycle system was one of the strongest ideas discovered during the exploration. The useful part is the lifecycle abstraction, not its opinionated merge workflow.
+The target lifecycle model for `kra`. The useful part is the lifecycle abstraction itself — it must
+stay orthogonal to merge workflow, so that adopting it does not commit `kra` to any opinion about how
+code gets integrated.
 
 ## Proposed minimal lifecycle
 

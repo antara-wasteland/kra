@@ -45,7 +45,7 @@ TASK-456/
 
 Each child can be a worktree backed by its repository's shared Git store.
 
-This is where task-first systems such as Gion/kra are structurally stronger than repository-first worktree managers.
+This is where a task-first system is structurally stronger than a repository-first worktree manager: the workspace, not the repository, is the container.
 
 ## Unified model
 

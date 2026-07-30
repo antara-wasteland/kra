@@ -106,18 +106,18 @@ must degrade past when stale (`docs/dev/spec/concepts/state-store.md`). The rema
 the code level, where the runtime is cmux by name rather than by interface — see
 [gap analysis](kra/gap-analysis.md#8-runtime-adapter-abstraction--partial).
 
-## 6. Declarative inventory and ephemeral execution are separate
+## 6. Durable inventory and ephemeral execution are separate
 
-Mani solves long-lived repository inventory/bootstrap.
-
-Task workspaces solve ephemeral execution.
+Two different questions, easy to conflate:
 
 ```text
-Mani
-= what repositories belong to the workstation
+durable inventory
+= what repositories belong to this workstation at all
 
-Task workspace manager
+task workspace
 = what repositories/branches belong to this task right now
 ```
 
-They can coexist without one replacing the other.
+`kra` answers the second. The first is a separate concern and can stay in whatever tool already
+handles machine setup — `kra`'s shared repo pool is a cache keyed by remote, not an inventory of
+what you own.

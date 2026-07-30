@@ -5,31 +5,24 @@ status: draft
 
 # Fork and Upstream Strategy
 
-This repository is a fork of `tasuku43/kra`. This page records when that fork should carry a change
-and when the change should go upstream instead.
+This repository is a fork of `tasuku43/kra`, and **this fork is where the work happens**. Upstreaming
+is an option to keep open per change, not a gate a change has to pass before it can be built.
+
+This page records how to keep that option cheap.
 
 ## Current state: zero divergence
 
 `rishwanth-th/kra` `main` is identical to `tasuku43/kra` `main` at `1fdcd0b` — no commits ahead, none
-behind. Everything the fork can do, upstream does; there is no fork-local behavior to maintain and
-nothing to reconcile.
+behind. There is no fork-local behavior to maintain yet and nothing to reconcile.
 
-That is the cheapest possible position and worth keeping deliberately. Every roadmap item is a
-green-field contribution decision rather than a divergence already incurred.
+That is the cheapest possible starting position. The point of the rules below is not to defer work to
+upstream; it is to make sure that when a change *is* worth offering upstream, it can be offered
+without a rewrite — and, more selfishly, that the fork can still take upstream's future commits
+without a merge fight.
 
-## Do not fork merely to customize defaults
+## The fork is not a disagreement
 
-Prefer configuration or small upstream PRs for:
-
-- path and branch templates,
-- runtime adapters,
-- hook events,
-- JSON output coverage,
-- custom commands.
-
-## Fork when the architectural unit differs
-
-A fork is justified when upstream fundamentally does not want:
+A fork usually signals that upstream does not want something architectural:
 
 - task-first workspaces,
 - polyrepo composition,
@@ -37,32 +30,34 @@ A fork is justified when upstream fundamentally does not want:
 - runtime abstraction,
 - machine-first operation.
 
-These are architectural choices, not cosmetic preferences.
-
-The [gap analysis](../kra/gap-analysis.md) found that upstream `kra` already holds four of those
-five positions. Only lifecycle extensibility is absent, and upstream's own backlog shows it absent as
-an unfilled gap rather than a rejected proposal: all 17 backlog epic files are fully checked off, and
+The [gap analysis](../kra/gap-analysis.md) found that upstream `kra` already holds four of those five
+positions. Only lifecycle extensibility is absent, and upstream's own backlog shows it absent as an
+unfilled gap rather than a rejected proposal: all 17 backlog epic files are fully checked off, and
 none of them ever raised hooks. Nothing in `kra`'s stated design objects to them.
 
-That is a weak case for divergence and a strong case for contribution.
+So this fork exists to move faster on an agreed direction, not to depart from one. Worth remembering
+when a design decision comes up: agreeing with upstream's architecture is usually also the cheaper
+choice, because it keeps `git merge upstream/main` boring.
 
-## Preferred sequence
+## Build it generically anyway
 
-1. Use upstream.
-2. Identify the missing primitive.
-3. Implement it generically.
-4. Raise an upstream PR.
-5. Maintain fork-local divergence only where upstream philosophy and workstation requirements
-   genuinely differ.
+Not out of deference — out of self-interest. A hook runner that hardcodes one workstation's bootstrap
+script, or a runtime adapter shaped around one terminal, has to be rewritten the first time a second
+case appears, and it makes every future upstream merge worse.
 
-Step 3 is the one that gets skipped. A hook runner that hardcodes this workstation's bootstrap
-script, or a runtime adapter shaped around one terminal, is not upstreamable and quietly commits the
-fork to permanent maintenance.
+Practical form:
 
-## Upstream candidates
+1. Identify the missing primitive.
+2. Implement it generically, in the layer it belongs to.
+3. Wire this workstation's specifics on top of it, separately.
+4. Offer the primitive upstream if and when that is worth the round trip.
+
+Step 3 is the one that gets skipped, and skipping it is what turns a fork into a maintenance burden.
+
+## Generic enough to offer upstream
 
 Everything in [roadmap](../kra/roadmap.md) phases 1–3 is broadly useful and encodes no single user's
-workflow:
+workflow, so none of it needs to be fork-only:
 
 - bounded worker pool for fan-out operations,
 - lifecycle hooks with a documented environment contract,
@@ -74,8 +69,8 @@ workflow:
 - explicit workspace readiness state,
 - workspace trash and GC.
 
-Phase 4.1 (runtime port rename) is upstreamable but broad; raise it as one intentional change rather
-than letting it accumulate as fork drift.
+Phase 4.1 (runtime port rename) is generic but broad — ~27 files. Do it as one intentional change
+rather than letting it accumulate as scattered drift, whether or not it is ever offered upstream.
 
 ## Keep outside the tool
 
@@ -85,18 +80,21 @@ than letting it accumulate as fork drift.
 - personal repository grouping,
 - workstation-only conventions.
 
-These belong in a higher integration layer or in configuration. Note that `kra` currently has no
-custom-subcommand extension point
-([gap analysis §14](../kra/gap-analysis.md#14-custom-subcommands--missing-but-the-pattern-exists)),
-so this rule has nowhere to land until
-[roadmap 4.3](../kra/roadmap.md#43-custom-subcommand-extension-point-upstreamable) exists. Until
-then, resist putting workstation specifics into the fork — that is exactly how a fork becomes
-unmergeable.
+These belong in a higher integration layer or in configuration — not because upstream would object,
+but because they are single-user behavior that will never be worth maintaining inside a general tool.
 
-## Contributing upstream: what the project expects
+`kra` currently has no command-level extension point
+([gap analysis §14](../kra/gap-analysis.md#14-custom-subcommands--missing-but-the-pattern-exists)), so
+this rule has nowhere to land until
+[roadmap 4.3](../kra/roadmap.md#43-custom-subcommand-extension-point-upstreamable) exists. That is an
+argument for building 4.3 reasonably early: it is the pressure valve that keeps workstation specifics
+out of the substrate.
+
+## The project's own conventions
 
 Read from `AGENTS.md`, `docs/dev/backlog/README.md`, and `docs/dev/spec/concepts/architecture.md`.
-A change that ignores these will not land regardless of its merit:
+These are inherited with the fork, and worth following even for fork-only work — they are what keeps
+the codebase legible and upstream merges boring:
 
 - **Spec first.** Behavior is specified under `docs/dev/spec/` before it is implemented, and a spec
   is flipped to `status: implemented` as part of the done definition. Ambiguity is resolved by
@@ -108,19 +106,19 @@ A change that ignores these will not land regardless of its merit:
   direction (`cli` → `app` → `domain`, adapters in `infra`/`ui`) and holds an explicit allowlist for
   direct infra imports under `cli` that "no silent expansion" is permitted against. Hook execution
   belongs in `app` over an `infra` port, not in `cli`.
-- **Quality gate before any PR:** `test -z "$(gofmt -l .)"`, `./scripts/lint-ui-color.sh`,
-  `go vet ./...`, `go test ./...`.
-- **Commit scope discipline.** Commits are sliced to one backlog item and stage only intended paths.
-  The same allowlist rule governs commands that commit inside `KRA_ROOT`.
-- The maintainer works in Japanese (`AGENTS.md` sets Japanese as the response language). Worth
-  knowing when writing an issue or PR description.
+- **Quality gate before any commit worth keeping:** `test -z "$(gofmt -l .)"`,
+  `./scripts/lint-ui-color.sh`, `go vet ./...`, `go test ./...`. Note that GitHub Actions does not run
+  on this fork, so this gate is local-only — nothing will catch it for you.
+- **Commit scope discipline.** Commits are sliced to one item and stage only intended paths. The same
+  allowlist rule governs `kra` commands that commit inside `KRA_ROOT`.
+- If an upstream issue or PR is ever worth opening, note that the maintainer works in Japanese
+  (`AGENTS.md` sets Japanese as the response language).
 
 ## Fork hygiene
 
-- Keep fork-local commits separable from upstreamable ones; do not mix a generic primitive and its
-  workstation-specific caller in one commit.
-- Follow the spec-then-implementation convention even for fork-local work, so an upstream PR does not
-  need the spec written retroactively.
-- Track compatibility promises in `docs/dev/spec/core/COMPATIBILITY.md` when metadata schemas change.
-- Re-check divergence before starting work — the zero-divergence position above is only true until
-  the first fork-local commit lands on `main`.
+- Keep generic primitives in separate commits from their workstation-specific callers. This is the
+  one habit that preserves every future option at almost no cost.
+- Track compatibility promises in `docs/dev/spec/core/COMPATIBILITY.md` when metadata schemas change —
+  `.kra.meta.json` is read by workspaces that outlive any single version.
+- Merge `upstream/main` periodically rather than in one large catch-up. The zero-divergence position
+  above holds only until the first fork-local commit lands.

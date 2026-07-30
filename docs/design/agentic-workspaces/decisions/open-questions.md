@@ -11,17 +11,6 @@ several of these against the actual `kra` implementation; those are recorded und
 
 ## Still open
 
-### Which substrate is the source of truth
-
-Declarative desired workspace state (Gion) or operational ticket workspace lifecycle (`kra`)?
-
-A hybrid may emerge, but one has to be authoritative. The audit does not settle this — it only shows
-that `kra`'s operational side is already built and specified, and that what it lacks is additive.
-The symmetric audit of the sibling substrate belongs in that repo; this question is answered once
-both exist.
-
-Until then, this fork proceeds on the `kra` side without foreclosing the other.
-
 ### Hook semantics
 
 The design surface is sketched in [roadmap 1.2](../kra/roadmap.md#12-lifecycle-hooks-upstreamable--the-headline-gap),
@@ -72,6 +61,24 @@ wanted, or is that a requirement inherited from repository-first tools that had 
 Leaning: leave it fixed. Record the reason before anyone "fixes" it.
 
 ## Resolved
+
+### Which substrate — decided
+
+*Question: should the foundational abstraction be a declarative desired-workspace-state reconciler,
+or an operational ticket workspace lifecycle?*
+
+Operational ticket workspace lifecycle: `kra`, developed in this fork. The tool-survey phase is
+closed and the comparison material has been removed from these notes.
+
+What the audit contributed to that decision: `kra`'s operational side is already built and specified
+— canonical filesystem-first state, live risk classification, recoverable multi-phase close, a shared
+bare pool with cross-root GC, a consistent JSON envelope — and everything it lacks is additive rather
+than architectural. There is no need to trade the built half away to get the missing half.
+
+Note that the two stances are not actually exclusive at the level that matters: a declarative
+"desired repositories for this task" input can sit *on top of* `kra`'s lifecycle, since
+`repos_restore[]` already is a declared desired set. If reconciliation is ever wanted, it is a
+command over existing metadata, not a different foundation.
 
 ### Archive semantics — resolved
 

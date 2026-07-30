@@ -21,7 +21,7 @@ shared Git object database
 
 This is much cheaper than cloning the repository for every agent.
 
-Gion's explicit shared bare-repository pool makes this model especially natural for task workspaces spanning several repositories.
+`kra`'s explicit shared bare-repository pool at `$KRA_HOME/repo-pool/` makes this model natural for task workspaces spanning several repositories: one object store per remote, shared across every task and root on the machine.
 
 ## The expensive parts are usually elsewhere
 

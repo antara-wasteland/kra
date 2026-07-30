@@ -8,8 +8,10 @@ status: draft
 Sequenced from the [gap analysis](gap-analysis.md). Ordering is by dependency and by how much each
 item unblocks, not by implementation cost.
 
-Each item notes whether it is **upstreamable** (generic enough to raise against `tasuku43/kra`) or
-**fork-local** under the rules in [fork strategy](../decisions/fork-strategy.md).
+All of it is built in this fork. Items are tagged **upstreamable** (generic — no single user's
+workflow encoded, so it stays offerable upstream and keeps future merges clean) or **fork-local**
+(workstation choice by nature). The tag is a design constraint on how to build the thing, not a
+gate on whether to build it — see [fork strategy](../decisions/fork-strategy.md).
 
 ## Phase 1 — make the substrate extensible
 
@@ -125,10 +127,14 @@ Follow the shape already in `internal/repodiscovery/provider.go`: interface + `P
 name-keyed registry with a built-in default and a supported-list error. Reusing an existing
 in-repo convention is a materially easier upstream argument than proposing a new one.
 
-### 4.2 Herdr adapter (fork-local until upstream accepts 4.1)
+### 4.2 Second runtime adapter (fork-local)
 
-Implement against the port from 4.1. Not before it — a second runtime wired in by name is exactly
-the "scattered special cases" outcome the design notes warn about.
+Whichever terminal runtime this workstation actually settles on — Herdr is the current intent.
+Implement it against the port from 4.1, never before it: a second runtime wired in by name rather
+than by interface is exactly the scattered-special-cases outcome 4.1 exists to prevent.
+
+Fork-local by nature — the adapter is workstation choice, while the port it plugs into is the generic
+part.
 
 ### 4.3 Custom subcommand extension point (upstreamable)
 
