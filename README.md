@@ -1,5 +1,8 @@
 # kra
 
+> **Antara Wasteland migration (2026-10-20; provisional):** Read the [shared GitHub operating contract](https://github.com/antara-wasteland/.github-private/blob/feat/github-operating-contract/docs/github-operating-contract.md), [Trajectory #88](https://github.com/antara-wasteland/trajectory/issues/88), and [Alchemy Discussion #86](https://github.com/antara-wasteland/trajectory/discussions/86) before cross-repo work. [Project Vision](https://github.com/orgs/antara-wasteland/projects/2) is the existing Harness Engineering research program. SEED unification and Linear retirement remain in progress; preserve this repository's evidence and execution boundaries.
+
+
 `kra` is a local CLI for ticket-driven development workflows on your filesystem.
 It creates an isolated workspace per task, attaches only the repositories you need as Git worktrees, and closes work safely into `archive/` when done.
 It is useful standalone for workspace lifecycle operations, and becomes more valuable with `cmux` by aligning ticket, `kra` workspace, and `cmux` workspace in a 1:1:1 operating model.
